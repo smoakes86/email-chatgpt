@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Set your OpenAI API key from environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/email-webhook", methods=["POST"])
 def email_webhook():
@@ -16,28 +16,25 @@ def email_webhook():
     if not body:
         return jsonify({"error": "Email body is empty"}), 400
 
-    # Log incoming email info (optional)
     print(f"Email from: {sender}")
     print(f"Subject: {subject}")
     print(f"Body: {body[:200]}...")
 
-    # Send prompt to ChatGPT
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": body}
             ]
         )
-        reply = response["choices"][0]["message"]["content"]
+        reply = response.choices[0].message.content
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
     print("GPT-4 Reply:")
     print(reply)
 
-    # You can extend this to email back the response here
     return jsonify({"reply": reply})
 
 @app.route("/", methods=["GET"])
